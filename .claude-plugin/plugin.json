@@ -1,0 +1,21 @@
+{
+  "name": "pratikbin-skills",
+  "description": "Curated skill packs for Claude Code. Currently ships Uncloud skills: cluster setup, compose authoring, deploy workflows, and day-2 operations.",
+  "author": {
+    "name": "pratikbin",
+    "email": "pratik@nodeops.xyz"
+  },
+  "homepage": "https://github.com/pratikbin/skills",
+  "repository": "https://github.com/pratikbin/skills",
+  "license": "MIT",
+  "keywords": [
+    "uncloud",
+    "devops",
+    "docker",
+    "compose",
+    "deployment",
+    "orchestration",
+    "claude-code",
+    "skills"
+  ]
+}
