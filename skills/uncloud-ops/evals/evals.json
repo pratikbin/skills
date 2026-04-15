@@ -1,0 +1,45 @@
+{
+  "skill_name": "uncloud-ops",
+  "evals": [
+    {
+      "id": 1,
+      "name": "debug-502-bad-gateway",
+      "prompt": "my uncloud service 'webapp' at https://app.example.com is returning 502 bad gateway but it was working yesterday. how do i debug this step by step? give me the commands to run in order, oldest-first.",
+      "expected_output": "Outside-in debug sequence: uc ls / uc ps webapp to check replica status and health, uc logs -n 200 webapp to see recent logs, uc caddy config to see what Caddy thinks the upstreams are (healthy containers should show up in the reverse_proxy block), uc inspect webapp for detail, uc wg show if cross-machine, uc machine ls to confirm machines are up. Explains that unhealthy containers are automatically removed from Caddy upstreams, so 502 often means all replicas went unhealthy.",
+      "files": [],
+      "assertions": [
+        {"text": "Recommends uc ps (or uc ps webapp) to check replica/health state"},
+        {"text": "Recommends uc logs to inspect recent logs"},
+        {"text": "Recommends uc caddy config to see Caddy's view of upstreams"},
+        {"text": "Explains that unhealthy replicas are removed from Caddy automatically"},
+        {"text": "Provides commands in a sequential order"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "tail-logs-specific-machine",
+      "prompt": "We have a replicated service `api` with 6 replicas spread across 3 machines (m1 m2 m3). One user reported a weird error at around 14:32 local time today. I only care about logs from m2 for the api service between 14:30 and 14:40 — I don't want the noise from the other two machines. what's the exact uc logs command?",
+      "expected_output": "uc logs api -m m2 --since '14:30' --until '14:40' or similar. May need to show the RFC 3339 form (e.g. --since 2025-12-22T14:30:00 --until 2025-12-22T14:40:00) since 'today' date needs to be inferred. The -m flag filters by machine. --since and --until take RFC 3339 or relative duration.",
+      "files": [],
+      "assertions": [
+        {"text": "Uses uc logs command with api service name"},
+        {"text": "Uses -m m2 (or --machine m2) to filter by machine"},
+        {"text": "Uses --since flag with a time value"},
+        {"text": "Uses --until flag to bound the end of the window"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "exec-into-specific-replica",
+      "prompt": "I have a service called `worker` with 5 replicas. `uc ps` shows one replica named worker-d4f2 on machine vps2 is stuck in a weird state. I want to open an interactive shell inside THAT SPECIFIC container (not a random replica) to look around. How?",
+      "expected_output": "uc exec --container d4f2 worker (uses --container flag with the container ID prefix) or uc exec --container worker-d4f2 worker. Default shell is tried (bash then sh). Explains that without --container, uc exec lands on a random replica. May optionally show /bin/zsh or similar to override shell.",
+      "files": [],
+      "assertions": [
+        {"text": "Uses uc exec command"},
+        {"text": "Uses --container flag with the specific container ID or prefix"},
+        {"text": "Specifies the service name (worker)"},
+        {"text": "Explains that without --container, a random replica is used"}
+      ]
+    }
+  ]
+}

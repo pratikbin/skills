@@ -1,0 +1,50 @@
+{
+  "skill_name": "uncloud-cluster",
+  "evals": [
+    {
+      "id": 1,
+      "name": "hobbyist-hetzner-vps",
+      "prompt": "i just spun up a fresh ubuntu 24.04 vps on hetzner, the ip is 95.217.12.34 and i can ssh in as root with my id_ed25519 key. i want to try this uncloud thing everyone's been hyping on /r/selfhosted. give me the exact commands to set it up so i can start deploying apps. i dont have a domain yet, i'm fine using whatever free domain uncloud gives me.",
+      "expected_output": "Step-by-step commands: install uc CLI (curl | sh or brew), then uc machine init root@95.217.12.34 with default flags (so it deploys Caddy and reserves the managed uncld.dev domain), verify with uc machine ls. Should mention ports 80/443/51820 need to be open. Should NOT use --no-caddy or --no-dns. Should NOT suggest Alpine.",
+      "files": [],
+      "assertions": [
+        {"text": "Includes install step via install.sh script or brew"},
+        {"text": "Command `uc machine init root@95.217.12.34` is shown verbatim or near-verbatim"},
+        {"text": "Does NOT include --no-caddy flag (user wants the free managed flow)"},
+        {"text": "Does NOT include --no-dns flag"},
+        {"text": "Mentions verifying with uc machine ls or similar"},
+        {"text": "Mentions required open ports (80/443 and/or 51820/udp)"},
+        {"text": "Does not recommend Alpine Linux"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "prod-multi-cluster-context",
+      "prompt": "I manage three environments for a client: dev (1 machine at dev.acme.internal), staging (2 machines staging-1 staging-2 both in hetzner fra), and prod (3 machines prod-1 prod-2 prod-3 at aws us-east-1). How should I structure my local uncloud config so I can easily switch between them and not deploy to the wrong cluster by accident? I'm on a non-root ubuntu user with passwordless sudo on all boxes, and I use different ssh keys per environment (~/.ssh/acme_dev, ~/.ssh/acme_staging, ~/.ssh/acme_prod).",
+      "expected_output": "Explains that contexts isolate clusters. Shows uc machine init with -c flag per environment (e.g. -c dev, -c staging, -c prod), each pointing at the first machine with the right ssh key (-i flag). Then uc machine add -c <ctx> for the remaining machines in each env. Shows uc ctx use <name> to switch. Mentions x-context in compose files as a safety belt so files can't be deployed to wrong cluster.",
+      "files": [],
+      "assertions": [
+        {"text": "Mentions three separate cluster contexts (dev, staging, prod)"},
+        {"text": "Shows uc machine init with -c/--context flag"},
+        {"text": "Shows uc machine init with -i/--ssh-key flag for different keys"},
+        {"text": "Uses ubuntu@host (non-root) connection format"},
+        {"text": "Shows uc machine add for additional machines in each env"},
+        {"text": "Mentions uc ctx use or uc ctx ls for switching contexts"},
+        {"text": "Recommends x-context in compose files as a safety mechanism"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "machine-behind-nat",
+      "prompt": "I want to add a home server to my uncloud cluster. It's behind my home router (nat), router public ip is 203.0.113.55 and i've port-forwarded udp 51820 on the router to the box. The box is 192.168.1.50 on the lan, reachable as home.tailnet via tailscale which gives it 100.64.0.5. How do I run uc machine add for this so wireguard actually works?",
+      "expected_output": "Explains that uncloud auto-detects routable IPs and the public IP but NAT+port-forward means auto-detection won't find the right thing. Shows uc machine add with explicit --public-ip 203.0.113.55 and --wg-endpoint 203.0.113.55:51820 so other machines in the cluster can reach this one. Notes the box should be reachable via SSH (user decides ssh target - probably via tailscale IP 100.64.0.5 or home.tailnet).",
+      "files": [],
+      "assertions": [
+        {"text": "Uses uc machine add command"},
+        {"text": "Passes --wg-endpoint flag explicitly with 203.0.113.55 and port 51820"},
+        {"text": "Passes --public-ip flag explicitly or explains why it matters for NAT"},
+        {"text": "Explains that auto-detection is unreliable behind NAT"}
+      ]
+    }
+  ]
+}

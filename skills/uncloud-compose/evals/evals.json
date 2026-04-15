@@ -1,0 +1,54 @@
+{
+  "skill_name": "uncloud-compose",
+  "evals": [
+    {
+      "id": 1,
+      "name": "hobbyist-expose-gitea",
+      "prompt": "i want to self-host gitea on my uncloud cluster. the image is gitea/gitea:1.22 and by default it listens on port 3000 (http) and 22 (ssh). i have a domain git.example.com already cname'd to my cluster. can you write me a compose.yaml? i want gitea's data to survive restarts (it stores everything in /data inside the container) and i want ssh to work so i can git push over ssh.",
+      "expected_output": "compose.yaml with gitea service, image gitea/gitea:1.22, named volume mounted at /data, x-ports list containing both 'git.example.com:3000/https' (for HTTPS via Caddy) and '22:22@host' (for ssh bypass via host mode). Top-level volumes block declaring the gitea volume.",
+      "files": [],
+      "assertions": [
+        {"text": "Contains a services.gitea (or similar) block with image gitea/gitea:1.22"},
+        {"text": "Has named volume mounted at /data"},
+        {"text": "Uses x-ports (NOT ports) for HTTP/HTTPS publishing"},
+        {"text": "x-ports entry for HTTPS uses git.example.com:3000/https format"},
+        {"text": "SSH port 22 is published in @host format (e.g. 22:22@host)"},
+        {"text": "Has top-level volumes block defining the named volume"},
+        {"text": "Does NOT use networks block"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "prod-django-migrate-pin-db",
+      "prompt": "Turn this into a production uncloud compose file: a Django web service (build from current directory, uses a Dockerfile that already exists), 3 replicas, scaled across the cluster behind https at app.acme.com, reads DATABASE_URL from env, uses a Postgres 16 database on ONE specific machine called db-primary (the db must never move, its volume is there), needs to run `python manage.py migrate` before every deploy, and needs a proper healthcheck so rollouts are safe. Also the compose file should never accidentally deploy to our staging cluster, the context is called 'prod'.",
+      "expected_output": "compose.yaml with x-context: prod at top level. Two services: web (build: ., image with gitsha template, environment: DATABASE_URL, deploy.replicas: 3, healthcheck using curl/health endpoint, x-ports: app.acme.com:8000/https or similar, x-pre_deploy with command: python manage.py migrate) and db (postgres:16, named volume, x-machines: [db-primary], no x-ports, POSTGRES_PASSWORD env). Top-level volumes block.",
+      "files": [],
+      "assertions": [
+        {"text": "Top-level x-context: prod"},
+        {"text": "web service has build: . (or similar)"},
+        {"text": "web service has deploy.replicas: 3"},
+        {"text": "web service has a healthcheck block"},
+        {"text": "web service has x-pre_deploy with command referencing python manage.py migrate"},
+        {"text": "web service has x-ports containing app.acme.com:<port>/https"},
+        {"text": "db service pinned via x-machines: db-primary (or list form)"},
+        {"text": "db service does NOT publish ports externally (no x-ports or only internal binds)"},
+        {"text": "db uses postgres:16 image"},
+        {"text": "Top-level volumes block for postgres data"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "compose-feature-support",
+      "prompt": "I'm porting an existing docker-compose.yml to uncloud. In it I'm using `networks:` to create an isolated bridge network between api and db, `secrets:` to mount a postgres_password file, and `deploy.placement.constraints` to pin a worker to a label-matching node. I also rely on `depends_on.service.condition: service_healthy` to gate startup. Which of these are supported by uncloud, and what should I do instead for the ones that aren't?",
+      "expected_output": "Clearly states: networks = NOT supported (uncloud has single flat overlay, just remove them). secrets = NOT supported (use env_file with a .env file or Compose configs with file-mounted content for non-sensitive config). deploy.placement = NOT supported (use x-machines extension). depends_on.condition service_healthy = NOT supported / limited (use x-pre_deploy for wait-for-healthy behavior or make the app tolerant of a cold dependency).",
+      "files": [],
+      "assertions": [
+        {"text": "States networks is not supported and to remove it"},
+        {"text": "States secrets is not supported and suggests env_file or configs"},
+        {"text": "States deploy.placement is not supported and points to x-machines"},
+        {"text": "Addresses depends_on condition: service_healthy as not supported / limited"},
+        {"text": "Suggests x-pre_deploy or app resilience as alternative for healthy-wait"}
+      ]
+    }
+  ]
+}

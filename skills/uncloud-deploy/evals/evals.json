@@ -1,0 +1,49 @@
+{
+  "skill_name": "uncloud-deploy",
+  "evals": [
+    {
+      "id": 1,
+      "name": "hobbyist-first-deploy",
+      "prompt": "I just got uncloud set up on my hetzner vps (it has the managed uncld.dev domain reserved). I want to deploy linuxserver/nextcloud to it. I don't have a compose file yet. What's the fastest way to get it running at https://nextcloud.<cluster-domain>/ without typing a 100 line compose file? I'll worry about config later, I just want to see the setup page.",
+      "expected_output": "Use `uc run` for the fast path: `uc run -n nextcloud -p 443/https linuxserver/nextcloud` (or port 80/https depending on container config). Explains this is the Docker-style shortcut and mentions converting to a compose file later with uc deploy once it's working. Mentions that the hostname defaults to nextcloud.<cluster-domain> because the managed domain is reserved.",
+      "files": [],
+      "assertions": [
+        {"text": "Uses uc run command (not uc deploy)"},
+        {"text": "Uses -p/--publish flag with /https protocol"},
+        {"text": "Names the service via -n/--name flag"},
+        {"text": "References linuxserver/nextcloud image"},
+        {"text": "Mentions that omitted hostname defaults to service-name.cluster-domain"},
+        {"text": "Suggests converting to a compose file later for repeatability"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "ci-cd-github-actions",
+      "prompt": "write me a github actions workflow that deploys our monorepo app to our uncloud cluster on every push to main. the compose file is at `deploy/compose.prod.yaml`, the cluster entry machine is at root@vps1.myapp.com, the ssh private key is in the secret UNCLOUD_SSH_KEY. the app has both a compose `build:` section and a pre-deploy hook for django migrations. the workflow must be non-interactive (no y/n prompts) and must fail the job if the deploy fails.",
+      "expected_output": "GitHub Actions YAML: checkout, install uc via curl | sh, write SSH key from secret to ~/.ssh/id_ed25519 with chmod 600, export UNCLOUD_CONNECT=root@vps1.myapp.com and UNCLOUD_AUTO_CONFIRM=1 (or pass -y), run uc deploy -f deploy/compose.prod.yaml. Explains that -y or UNCLOUD_AUTO_CONFIRM are required for non-interactive. Mentions exit-on-failure is automatic since uc deploy returns non-zero on failure.",
+      "files": [],
+      "assertions": [
+        {"text": "Installs uc CLI via curl install script or brew"},
+        {"text": "Writes SSH key from UNCLOUD_SSH_KEY secret with chmod 600"},
+        {"text": "Uses UNCLOUD_CONNECT env var or --connect flag with root@vps1.myapp.com"},
+        {"text": "Uses -y flag OR UNCLOUD_AUTO_CONFIRM=1 for non-interactive confirmation"},
+        {"text": "Calls uc deploy with -f deploy/compose.prod.yaml"},
+        {"text": "Output is a GitHub Actions workflow YAML"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "emergency-rollback-debug",
+      "prompt": "I just ran `uc deploy` and two of the three replicas of my `api` service rolled out successfully but the third failed its healthcheck and got rolled back. The cluster is now in a mixed state - 2 replicas on the new image, 1 on the old. How do I safely get everything back to the old version right now without making things worse? Our old image tag is ghcr.io/acme/api:v1.4.2. I don't have a healthcheck issue I need to debug later - right now I just need to restore known good state fast.",
+      "expected_output": "Explain uncloud has no uc rollback command: the right move is to edit the compose file to pin image: ghcr.io/acme/api:v1.4.2 (instead of the floating / sha tag) and run uc deploy again. Do NOT suggest --skip-health. Suggest running uc ps api first to confirm state, then do the deploy. Mention this is why version control on the compose file is important.",
+      "files": [],
+      "assertions": [
+        {"text": "Suggests editing compose file to pin image tag to ghcr.io/acme/api:v1.4.2"},
+        {"text": "Suggests running uc deploy with the pinned tag"},
+        {"text": "Does NOT recommend --skip-health as the primary fix"},
+        {"text": "Mentions uc ps to check current state before acting"},
+        {"text": "States that there is no uc rollback command"}
+      ]
+    }
+  ]
+}
