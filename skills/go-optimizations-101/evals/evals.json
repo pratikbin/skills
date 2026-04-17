@@ -1,0 +1,76 @@
+{
+  "skill_name": "go-optimizations-101",
+  "notes": "Iteration-2 assertions target reasoning quality, not just correct output. Each eval asserts a mix of: (a) named-mechanism citation, (b) reference/section pointer, (c) version/compiler caveat when relevant, (d) measure-vs-hypothesis framing for snippet-only work.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "optimize-word-counter",
+      "prompt": "I've got this word-counter that's showing up as a hot spot in our log-processing pipeline — pprof says ~40% of allocations come from here. Can you make it faster without changing the public API? Keep it correct on unicode inputs. Here's the code:\n\n```go\npackage wordcount\n\nfunc Count(input []byte) map[string]int {\n    counts := make(map[string]int)\n    var word []byte\n    for _, b := range input {\n        if b == ' ' || b == '\\t' || b == '\\n' {\n            if len(word) > 0 {\n                counts[string(word)] = counts[string(word)] + 1\n                word = nil\n            }\n            continue\n        }\n        word = append(word, b)\n    }\n    if len(word) > 0 {\n        counts[string(word)] = counts[string(word)] + 1\n    }\n    return counts\n}\n```\n\nWrite the optimized version to `wordcount.go`, and explain briefly (under 300 words) what you changed and why.",
+      "expected_output": "Optimized Count function with book-level rationale.",
+      "assertions": [
+        {"id": "named_mechanism_elision", "text": "Names the map-lookup string-conversion elision (rule that `m[string(b)]` read does not allocate but write/compound does).", "check_hint": "rationale contains 'elision' or explicit phrasing like 'read does not allocate but write does'"},
+        {"id": "named_mechanism_double_hash", "text": "Names the double-hash penalty of `m[k] = m[k] + 1` vs single-hash `m[k]++`.", "check_hint": "rationale mentions hash twice/double hash/one hash, OR cites §11.2"},
+        {"id": "named_mechanism_buffer_reuse", "text": "Names buffer reuse (`word = word[:0]`) as the reason the scratch slice stops allocating per word.", "check_hint": "mentions buffer reuse, amortized, backing array retained, or zero-alloc after first word"},
+        {"id": "section_citation", "text": "Cites at least one specific section or rule from the skill references (e.g. §9.1.3, §11.2, `strings.md`, `maps.md`).", "check_hint": "matches §\\d+\\.\\d+ or a references/*.md filename"},
+        {"id": "version_caveat", "text": "Either acknowledges Go 1.19 baseline for the elision rule OR notes the pointer-value counter trick (`map[string]*int`) with its trade-off.", "check_hint": "mentions 1.19, Go toolchain version, OR map[string]*int trade-off for mutation-heavy"},
+        {"id": "unicode_rationale", "text": "Explicitly justifies byte-level whitespace detection as UTF-8-safe (continuation bytes always ≥ 0x80).", "check_hint": "mentions 0x80, continuation byte, ASCII whitespace safety, or UTF-8 boundary preserved"},
+        {"id": "api_unchanged", "text": "Public signature `Count(input []byte) map[string]int` preserved.", "check_hint": "signature match"},
+        {"id": "compiles", "text": "Code is syntactically valid Go (parses).", "check_hint": "package declaration + no obvious syntax errors"}
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "escape-review",
+      "prompt": "I'm reviewing a PR in a ticket-processing service. The function below runs on every request (~5k rps). My benchmarks show 4 allocs/op and I think at least some of them shouldn't be there. Can you walk through it, identify every heap escape, explain why each happens, and suggest a rewrite that gets us closer to 0 allocs/op? Keep the behaviour identical.\n\n```go\npackage ticket\n\nimport \"fmt\"\n\ntype Ticket struct {\n    ID     int\n    Title  string\n    Status string\n}\n\nfunc Log(t *Ticket) {\n    prefix := fmt.Sprintf(\"[%d]\", t.ID)\n    fmt.Println(prefix, t.Title, \"->\", t.Status)\n}\n\nfunc Process(tickets []Ticket) []string {\n    var out []string\n    for _, t := range tickets {\n        Log(&t)\n        s := fmt.Sprintf(\"%d:%s\", t.ID, t.Status)\n        out = append(out, s)\n    }\n    return out\n}\n```\n\nWrite your analysis and the rewrite to `answer.md` (with the rewritten code inside a fenced block).",
+      "expected_output": "Structured analysis (observed/hypothesis/verify), escape-by-escape breakdown, rewrite, clearly labeled hypotheses.",
+      "assertions": [
+        {"id": "enumerates_escapes", "text": "Enumerates ≥3 distinct escape sources in the original: (a) &t loop-variable escape, (b) fmt routing through reflect.ValueOf, (c) non-preallocated append.", "check_hint": "all three enumerated as separate items with mechanism names"},
+        {"id": "named_reflect_rule", "text": "Names `reflect.ValueOf` (or fmt's use of it) as the mechanism that forces escape, per §4.6.3.", "check_hint": "mentions reflect.ValueOf explicitly, ideally citing §4.6.3"},
+        {"id": "named_loopvar_rule", "text": "Names the loop-variable address-escape rule per §4.6 (`&t` inside `for _, t := range`).", "check_hint": "mentions &t escape or §4.6 or 'address of loop variable'"},
+        {"id": "section_citation", "text": "Cites at least two specific sections (§4.6, §4.6.3, §14.1, etc.) from the skill references.", "check_hint": "matches ≥2 §\\d+\\.\\d+"},
+        {"id": "hypothesis_labeling", "text": "Labels claims as hypothesis/expected/to-verify rather than asserting measured speedups without measurement (snippet-only branch of SKILL.md).", "check_hint": "mentions 'expected', 'hypothesis', 'run scripts/…', 'verify with benchstat', or equivalent"},
+        {"id": "residual_floor_honest", "text": "Acknowledges the irreducible ≥1-alloc floor (the returned []string elements) OR proposes a signature change to remove it.", "check_hint": "mentions ≥1 alloc floor, returned-string must heap-allocate, OR API redesign"},
+        {"id": "rewrite_preallocates", "text": "Rewrite preallocates `out` with `make([]string, 0, len(tickets))` (or equivalent known-length form).", "check_hint": "make([]string, 0, len(tickets)) or make([]string, len(tickets))"},
+        {"id": "rewrite_no_fmt_in_loop", "text": "Rewrite inner loop contains no `fmt.Sprintf`/`fmt.Println` (uses strconv.Append* or a local []byte scratch).", "check_hint": "no fmt.* inside the for-body of the rewrite block"},
+        {"id": "rewrite_index_form", "text": "Rewrite uses `&tickets[i]` or by-value pattern (not `&t` of loop variable).", "check_hint": "rewrite has for i := range + &tickets[i], OR drops pointer entirely"}
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "merge-slices-hot",
+      "prompt": "Our event stream delivers batches of events as [][]byte and we concatenate them before writing to disk. The current implementation is slow and does many small allocations. Profile shows 60% of the time in this function.\n\n```go\npackage stream\n\nfunc Concat(batches [][]byte) []byte {\n    var out []byte\n    for _, b := range batches {\n        out = append(out, b...)\n    }\n    return out\n}\n```\n\nAdditionally, write a Go benchmark in the same package called `BenchmarkConcat` that (1) runs both the old and optimized versions, (2) uses `b.ReportAllocs()`, (3) uses realistic input (say, 16 batches of ~1KB each, produced in a helper that is reset-timer-safe). Show me both the old and new function and the benchmark file. Put it all in `concat.go` and `concat_test.go`.",
+      "expected_output": "Two-pass preallocation (either shape), honest benchmark, named rule.",
+      "assertions": [
+        {"id": "named_two_pass", "text": "Names the two-pass preallocation pattern (`memory-allocations.md` Rule 1 / §8.6 grow-in-one-step).", "check_hint": "mentions two-pass, single allocation, pre-size, or cites §8.6 / §3.6"},
+        {"id": "section_citation", "text": "Cites at least one specific section from `memory-allocations.md` or `slices.md`.", "check_hint": "matches §3.6, §8.6, §8.9, or the file name"},
+        {"id": "overflow_check_mentioned", "text": "Either implements or notes the integer-overflow guard on the length sum (book's production-grade form of two-pass).", "check_hint": "mentions overflow, `if k := n + len(s); k < n` pattern, or a caveat"},
+        {"id": "zero_fill_caveat", "text": "Notes the make+copy zero-fill elision detail (Go 1.15+, §8.3 restrictions) OR explains why preferring make+append over make+copy is a defensible choice for readability.", "check_hint": "mentions zero-fill, memclr elision, 1.15, §8.3, or acknowledges trade-off"},
+        {"id": "benchmark_hygiene_reset", "text": "Benchmark does setup before the measured region and calls `b.ResetTimer()` after it.", "check_hint": "ResetTimer after input build"},
+        {"id": "benchmark_report_allocs", "text": "Benchmark uses `b.ReportAllocs()`.", "check_hint": "contains b.ReportAllocs()"},
+        {"id": "benchmark_runs_both", "text": "Benchmark exercises both old and new implementations (sub-benchmarks or twin funcs) for apples-to-apples comparison.", "check_hint": "b.Run with Old/New OR two Benchmark funcs"},
+        {"id": "benchmark_dce_guard", "text": "Output of optimized function is assigned somewhere that defeats dead-code elimination (global sink, `runtime.KeepAlive`, etc.).", "check_hint": "package-level sink variable, runtime.KeepAlive, or result used after loop"},
+        {"id": "equivalence_test", "text": "Includes a correctness/equivalence test (not just a benchmark) so the refactor is guarded.", "check_hint": "TestConcat* or reflect.DeepEqual / bytes.Equal check"}
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "interface-boxing",
+      "prompt": "Our image filter runs a per-pixel op using the standard image.Image interface and it's way too slow at 1080p. Here's the inner loop:\n\n```go\nfunc Darken(img image.Image) image.Image {\n    b := img.Bounds()\n    out := image.NewRGBA(b)\n    for y := b.Min.Y; y < b.Max.Y; y++ {\n        for x := b.Min.X; x < b.Max.X; x++ {\n            c := img.At(x, y)\n            r, g, bl, a := c.RGBA()\n            out.Set(x, y, color.RGBA64{\n                R: uint16(r / 2),\n                G: uint16(g / 2),\n                B: uint16(bl / 2),\n                A: uint16(a),\n            })\n        }\n    }\n    return out\n}\n```\n\nExplain specifically what's slow here (be precise about allocations per pixel and where interface method calls cost you), then rewrite it for the case where `img` is `*image.RGBA` specifically. Include a fast path that uses `img.PixOffset` and direct slice access for both read and write. Put the analysis + code in `darken.go` with comments explaining the key decisions. Do NOT make it generic over image types — a concrete fast path is the point.",
+      "expected_output": "Named-mechanism analysis + concrete fast path + the canonical stdlib answer reference.",
+      "assertions": [
+        {"id": "counts_per_pixel_allocs", "text": "Gives a specific per-pixel allocation count (≥2) and explains where each comes from (At → Color interface, Set → color.Color boxing).", "check_hint": "states a number of allocs/pixel AND identifies both At and Set as sources"},
+        {"id": "names_boxing_cost", "text": "Names interface boxing (§14.1) and/or virtual-method-call + no-inline penalty (§14.3).", "check_hint": "mentions §14.1 / §14.3 / 'boxing' / 'vtable' / 'virtual call'"},
+        {"id": "mentions_rgba64image", "text": "Mentions `image/draw.RGBA64Image` / `RGBA64At` as the stdlib's documented answer (§14.4 canonical example).", "check_hint": "mentions RGBA64Image or RGBA64At"},
+        {"id": "section_citation", "text": "Cites at least one section from `interfaces.md` and ideally one from `bounds-check-elim.md`.", "check_hint": "matches §14.x + optionally §10.x"},
+        {"id": "uses_pixoffset", "text": "Rewrite uses `PixOffset` (once per row, not per pixel) or direct `Pix[]` indexing.", "check_hint": "PixOffset outside inner loop + Pix[] indexing inside"},
+        {"id": "bce_applied", "text": "Applies at least one BCE technique (3-index slice, highest-index-first, row-local rebind). Names it.", "check_hint": "mentions 3-index / [:n:n] / 'highest-index-first' / §10.6 / 'BCE'"},
+        {"id": "concrete_only", "text": "No fallback to generic `image.Image` — fast path is concrete to `*image.RGBA` per task constraint.", "check_hint": "function signature is *image.RGBA, not image.Image"},
+        {"id": "arithmetic_8bit_correct", "text": "Per-pixel arithmetic stays in integer space and is justified (e.g., `v >> 1` is exact for 8-bit darkening).", "check_hint": "r >> 1 or v/2 on uint8 with correctness comment"}
+      ],
+      "files": []
+    }
+  ]
+}

@@ -27,3 +27,9 @@ pnpm-debug.log*
 *.log
 tmp/
 .tmp/
+.pi
+.claude
+skills/go-optimizations-101-workspace/
+skills-lock.json
+# top-level standalone evals dirs (not skill evals/)
+/evals
