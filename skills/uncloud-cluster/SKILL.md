@@ -43,15 +43,40 @@ Ubuntu/Debian are the only officially tested distros. Flag this if they want to 
 
 ## Step 1: Install the `uc` CLI locally
 
+Prefer package managers — they pin a signed artifact and skip the remote-script-into-shell pattern.
+
+**Recommended (macOS/Linux):**
+
 ```bash
-# One-liner install script (macOS, Linux)
-curl -fsS https://get.uncloud.run/install.sh | sh
+brew install psviderski/tap/uncloud
 ```
 
-Alternatives:
-- **Homebrew** (macOS/Linux): `brew install psviderski/tap/uncloud`
-- **Debian/Ubuntu**: an official `.deb` repo exists (see docs `2-getting-started/1-install-cli.md`)
-- **Manual**: download `uncloud_<os>_<arch>.tar.gz` from `https://github.com/psviderski/uncloud/releases/latest`, extract, rename to `uc`, and move to `/usr/local/bin`
+**Debian/Ubuntu:** use the official `.deb` repo (see upstream docs `2-getting-started/1-install-cli.md`).
+
+**Manual download with checksum verification** — when no package manager is available:
+
+```bash
+VERSION="<release-tag>"   # e.g. v0.X.Y, from github.com/psviderski/uncloud/releases
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+ARCH="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"
+URL="https://github.com/psviderski/uncloud/releases/download/${VERSION}/uncloud_${OS}_${ARCH}.tar.gz"
+
+curl -fsSL -o uncloud.tar.gz "$URL"
+curl -fsSL -o uncloud.tar.gz.sha256 "${URL}.sha256"
+sha256sum -c uncloud.tar.gz.sha256       # MUST pass before extracting
+tar -xzf uncloud.tar.gz uc
+sudo mv uc /usr/local/bin/uc
+```
+
+**Last resort — install script (only when the above are unavailable):**
+
+> ⚠ `curl … | sh` executes whatever the remote server returns, with no integrity check. Inspect the script before piping it into a shell.
+
+```bash
+curl -fsSL -o /tmp/uncloud-install.sh https://get.uncloud.run/install.sh
+less /tmp/uncloud-install.sh            # review before running
+sh /tmp/uncloud-install.sh
+```
 
 Verify with:
 
@@ -191,9 +216,20 @@ To remove a service from the cluster, use `uc rm` (see `uncloud-ops`). To wipe U
 sudo /usr/local/bin/uncloud-uninstall
 ```
 
+> ⚠ **Destructive and irreversible.** This requires `sudo` and removes cluster state from the machine. **Always confirm with the user before running**, name the machine explicitly, and verify backups of named volumes exist first. Never run this from an automated agent loop without explicit user approval for the specific machine.
+
 This stops `uncloud.service` and `uncloud-corrosion.service`, removes the binaries, the systemd unit, the `/var/lib/uncloud` state directory, and the `uncloud` system user. **It does not touch Docker or user data volumes.** Warn the user to back up named volumes first if they care about them.
 
 After uninstall, delete the machine from the cluster's local view with `uc machine rm <name>` and remove the context with a manual edit to `~/.config/uncloud/config.yaml` (or delete the whole context entry if the cluster no longer exists).
+
+## Handling SSH keys safely
+
+Cluster bootstrap uses an SSH private key (`-i, --ssh-key`, default `~/.ssh/id_ed25519`). Treat it as a secret:
+
+- **Never read, print, copy, or echo the key contents.** Pass the path to `uc` and let it forward the key — do not `cat` it into logs, prompts, or env vars.
+- Do not write the key to a world-readable location. If a CI runner needs the key, drop it into `~/.ssh/id_ed25519` with `chmod 600` and unset it after use.
+- Prefer a per-environment key (`~/.ssh/acme_prod`) over a single shared key. Pass it explicitly via `-i`.
+- Confirm with the user before adding a new public key to a machine's `authorized_keys` or rotating an existing one.
 
 ## Common gotchas
 
