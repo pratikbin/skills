@@ -1,0 +1,50 @@
+{
+  "skill_name": "concourse-tasks",
+  "evals": [
+    {
+      "id": 0,
+      "name": "apt-get-install-in-run",
+      "prompt": "our concourse `unit` task spends 90s of every run installing nodejs and yarn. happens before any actual work. heres the task.yml:\n\n```yaml\nplatform: linux\n\nimage_resource:\n  type: registry-image\n  source:\n    repository: debian\n    tag: bookworm-slim\n\ninputs:\n  - name: source\n\noutputs:\n  - name: junit\n\nrun:\n  path: bash\n  args:\n    - -ec\n    - |\n      apt-get update\n      apt-get install -y nodejs npm\n      npm install -g yarn\n      cd source\n      yarn install\n      yarn test --reporter junit --output-file ../junit/results.xml\n```\n\ncan you make this faster? the unit suite itself only takes 30s but the full task is over 2min. we run the suite ~50 times a day across our pipelines so this matters.",
+      "expected_output": "Two-pronged speedup: (1) prebake nodejs/yarn into the `image_resource` (custom builder image, or use an off-the-shelf node:20 image instead of debian + apt-get); (2) add `caches:` for the package-manager cache directory (e.g. yarn cache, or `node_modules`) so subsequent yarn installs are near-instant. Brief explanation of why image_resource matters more than caches and what cache scope (worker × job × step × path) means.",
+      "files": [],
+      "assertions": [
+        {"name": "removes apt-get from run", "description": "Output task.yml does NOT have apt-get install nodejs/npm/yarn in run.args"},
+        {"name": "uses prebaked image", "description": "Output task.yml uses an image_resource that already has node/yarn (e.g. `node:20-bookworm-slim`, `node:20`, or a custom builder image), not bare debian"},
+        {"name": "adds caches directive", "description": "Output task.yml includes a `caches:` block with at least one path (e.g. `source/node_modules`, `source/.yarn`, etc.)"},
+        {"name": "preserves task contract", "description": "Output preserves `inputs: [{name: source}]`, `outputs: [{name: junit}]`, and the test command produces the junit XML"},
+        {"name": "explains image_resource over caches", "description": "Response explains that pinning/baking the image_resource is the bigger lever than caches alone (or otherwise calls out the order of bang-for-buck)"},
+        {"name": "valid yaml", "description": "Output YAML is syntactically valid Concourse v8 task config"}
+      ]
+    },
+    {
+      "id": 1,
+      "name": "oci-build-task-no-cache",
+      "prompt": "our app docker build is taking 6 minutes in concourse but only 90s on my laptop. we use oci-build-task. here's our task config:\n\n```yaml\nplatform: linux\n\nimage_resource:\n  type: registry-image\n  source:\n    repository: concourse/oci-build-task\n    tag: latest\n\ninputs:\n  - name: source\n\noutputs:\n  - name: image\n\nparams:\n  CONTEXT: source\n\nrun:\n  path: build\n```\n\nthe Dockerfile has 12 RUN steps including `npm ci` and `pip install -r requirements.txt` which between them are about half the build time. how do i get this down? we have a stable worker pool (typically the same 4-5 workers run our builds).",
+      "expected_output": "Add `caches: [{path: cache}]` to enable buildkit's layer cache. Pin `concourse/oci-build-task` by digest or specific tag instead of `latest`. Maybe note that cache locality requires the same worker (mention `volume-locality` placement strategy at operator level if relevant), but the meaningful first move is the `cache` path. Brief explanation that buildkit reuses layers between runs on the same worker.",
+      "files": [],
+      "assertions": [
+        {"name": "adds buildkit cache path", "description": "Output task.yml includes `caches:` with `path: cache` (the oci-build-task buildkit cache convention)"},
+        {"name": "pins oci-build-task version", "description": "Output replaces `tag: latest` with a pinned tag, digest, or `version: { digest: ... }` (or otherwise calls out latest as a problem)"},
+        {"name": "preserves CONTEXT param", "description": "Output preserves `params.CONTEXT: source` (or equivalent)"},
+        {"name": "explains buildkit layer reuse", "description": "Response explains that buildkit reuses layers between runs and that the cache only helps when the same worker runs again"},
+        {"name": "preserves run.path build", "description": "Output preserves `run.path: build` (the oci-build-task entrypoint)"},
+        {"name": "valid yaml", "description": "Output YAML is syntactically valid Concourse v8 task config"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "input-rename-without-duplication",
+      "prompt": "i have one `integration-test` task config (`ci/tasks/integration.yml`) that takes an input called `app-binary`. our pipeline runs the same integration suite against three different services that each produce their own binary: `orders-api-bin`, `payments-api-bin`, `users-api-bin`. right now we have THREE copies of the task.yml with the only difference being the input name. that's terrible.\n\nhow do i keep ONE task.yml and let each `task` step in the pipeline tell concourse 'when this task asks for `app-binary`, give it `orders-api-bin`'? i remember there's a feature for this but i can't recall the keyword.\n\nsketch what the pipeline-side `task` step should look like for the `orders` job, and confirm we can delete the duplicate task.ymls. include the (single, shared) task.yml as well.",
+      "expected_output": "Use `input_mapping:` on the task step in the pipeline to remap. The single shared task.yml declares `inputs: [{name: app-binary}]`. The orders-job task step reads `input_mapping: { app-binary: orders-api-bin }`. Confirm the duplicate task.ymls can be deleted. May also mention `output_mapping:` for the same use case on outputs.",
+      "files": [],
+      "assertions": [
+        {"name": "introduces input_mapping", "description": "Response uses `input_mapping:` at the pipeline-side task step level to remap"},
+        {"name": "task step uses correct mapping", "description": "Pipeline-side task step example shows `input_mapping: { app-binary: orders-api-bin }` (or equivalent indented form)"},
+        {"name": "shared task.yml inputs", "description": "Shared task.yml declares `inputs: [{name: app-binary}]` (the abstract name)"},
+        {"name": "confirms duplicates can be deleted", "description": "Response explicitly states the per-service task.ymls can be deleted (or merged into one)"},
+        {"name": "mentions output_mapping for symmetry", "description": "Response mentions `output_mapping:` as the analogous mechanism for outputs (either as a follow-up tip or in passing)"},
+        {"name": "valid yaml", "description": "Output YAML is syntactically valid Concourse v8 syntax"}
+      ]
+    }
+  ]
+}

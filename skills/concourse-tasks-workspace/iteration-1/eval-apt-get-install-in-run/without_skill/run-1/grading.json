@@ -1,0 +1,41 @@
+{
+  "run_id": "eval-0-without_skill",
+  "expectations": [
+    {
+      "text": "removes apt-get from run",
+      "passed": true,
+      "evidence": "no apt-get install nodejs/npm/yarn"
+    },
+    {
+      "text": "uses prebaked image",
+      "passed": true,
+      "evidence": "image with node baked"
+    },
+    {
+      "text": "adds caches directive",
+      "passed": false,
+      "evidence": "missing"
+    },
+    {
+      "text": "preserves task contract",
+      "passed": true,
+      "evidence": "source+junit+yarn test: true"
+    },
+    {
+      "text": "explains image_resource over caches",
+      "passed": true,
+      "evidence": "order-of-impact discussed"
+    },
+    {
+      "text": "valid yaml",
+      "passed": true,
+      "evidence": "platform+image_resource+run: true"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "total": 6,
+    "ratio": 0.8333333333333334,
+    "pass_rate": 0.8333333333333334
+  }
+}

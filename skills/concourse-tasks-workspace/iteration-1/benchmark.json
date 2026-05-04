@@ -1,0 +1,353 @@
+{
+  "metadata": {
+    "skill_name": "concourse-tasks",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-05-04T12:49:41Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 55.1,
+        "tokens": 32943,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "removes apt-get from run",
+          "passed": true,
+          "evidence": "no apt-get install nodejs/npm/yarn"
+        },
+        {
+          "text": "uses prebaked image",
+          "passed": true,
+          "evidence": "image with node baked"
+        },
+        {
+          "text": "adds caches directive",
+          "passed": true,
+          "evidence": "caches block present"
+        },
+        {
+          "text": "preserves task contract",
+          "passed": true,
+          "evidence": "source+junit+yarn test: true"
+        },
+        {
+          "text": "explains image_resource over caches",
+          "passed": true,
+          "evidence": "order-of-impact discussed"
+        },
+        {
+          "text": "valid yaml",
+          "passed": true,
+          "evidence": "platform+image_resource+run: true"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 37.5,
+        "tokens": 28957,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "introduces input_mapping",
+          "passed": true,
+          "evidence": "mentioned"
+        },
+        {
+          "text": "task step uses correct mapping",
+          "passed": true,
+          "evidence": "has app-binary -> orders-api-bin"
+        },
+        {
+          "text": "shared task.yml inputs",
+          "passed": true,
+          "evidence": "true"
+        },
+        {
+          "text": "confirms duplicates can be deleted",
+          "passed": true,
+          "evidence": "noted"
+        },
+        {
+          "text": "mentions output_mapping for symmetry",
+          "passed": true,
+          "evidence": "mentioned"
+        },
+        {
+          "text": "valid yaml",
+          "passed": true,
+          "evidence": "true"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8333333333333334,
+        "passed": 5,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 55.1,
+        "tokens": 35684,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "adds buildkit cache path",
+          "passed": true,
+          "evidence": "caches: [{path: cache}] present"
+        },
+        {
+          "text": "pins oci-build-task version",
+          "passed": false,
+          "evidence": "still latest, not addressed"
+        },
+        {
+          "text": "preserves CONTEXT param",
+          "passed": true,
+          "evidence": "true"
+        },
+        {
+          "text": "explains buildkit layer reuse",
+          "passed": true,
+          "evidence": "buildkit/layers/locality discussed"
+        },
+        {
+          "text": "preserves run.path build",
+          "passed": true,
+          "evidence": "true"
+        },
+        {
+          "text": "valid yaml",
+          "passed": true,
+          "evidence": "true"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8333333333333334,
+        "passed": 5,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 25.9,
+        "tokens": 25854,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "removes apt-get from run",
+          "passed": true,
+          "evidence": "no apt-get install nodejs/npm/yarn"
+        },
+        {
+          "text": "uses prebaked image",
+          "passed": true,
+          "evidence": "image with node baked"
+        },
+        {
+          "text": "adds caches directive",
+          "passed": false,
+          "evidence": "missing"
+        },
+        {
+          "text": "preserves task contract",
+          "passed": true,
+          "evidence": "source+junit+yarn test: true"
+        },
+        {
+          "text": "explains image_resource over caches",
+          "passed": true,
+          "evidence": "order-of-impact discussed"
+        },
+        {
+          "text": "valid yaml",
+          "passed": true,
+          "evidence": "platform+image_resource+run: true"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8333333333333334,
+        "passed": 5,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 24.9,
+        "tokens": 25616,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "introduces input_mapping",
+          "passed": true,
+          "evidence": "mentioned"
+        },
+        {
+          "text": "task step uses correct mapping",
+          "passed": true,
+          "evidence": "has app-binary -> orders-api-bin"
+        },
+        {
+          "text": "shared task.yml inputs",
+          "passed": true,
+          "evidence": "true"
+        },
+        {
+          "text": "confirms duplicates can be deleted",
+          "passed": true,
+          "evidence": "noted"
+        },
+        {
+          "text": "mentions output_mapping for symmetry",
+          "passed": false,
+          "evidence": "missing"
+        },
+        {
+          "text": "valid yaml",
+          "passed": true,
+          "evidence": "true"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8333333333333334,
+        "passed": 5,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 32.9,
+        "tokens": 25992,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "adds buildkit cache path",
+          "passed": false,
+          "evidence": "missing"
+        },
+        {
+          "text": "pins oci-build-task version",
+          "passed": true,
+          "evidence": "pinned or called out"
+        },
+        {
+          "text": "preserves CONTEXT param",
+          "passed": true,
+          "evidence": "true"
+        },
+        {
+          "text": "explains buildkit layer reuse",
+          "passed": true,
+          "evidence": "buildkit/layers/locality discussed"
+        },
+        {
+          "text": "preserves run.path build",
+          "passed": true,
+          "evidence": "true"
+        },
+        {
+          "text": "valid yaml",
+          "passed": true,
+          "evidence": "true"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.9444,
+        "stddev": 0.0962,
+        "min": 0.8333,
+        "max": 1
+      },
+      "time_seconds": {
+        "mean": 49.2333,
+        "stddev": 10.1614,
+        "min": 37.5,
+        "max": 55.1
+      },
+      "tokens": {
+        "mean": 32528.0,
+        "stddev": 3382.647,
+        "min": 28957,
+        "max": 35684
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.8333,
+        "stddev": 0.0,
+        "min": 0.8333,
+        "max": 0.8333
+      },
+      "time_seconds": {
+        "mean": 27.9,
+        "stddev": 4.3589,
+        "min": 24.9,
+        "max": 32.9
+      },
+      "tokens": {
+        "mean": 25820.6667,
+        "stddev": 190.2034,
+        "min": 25616,
+        "max": 25992
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.11",
+      "time_seconds": "+21.3",
+      "tokens": "+6707"
+    }
+  },
+  "notes": []
+}

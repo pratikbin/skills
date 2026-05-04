@@ -1,0 +1,41 @@
+{
+  "run_id": "eval-2-without_skill",
+  "expectations": [
+    {
+      "text": "introduces input_mapping",
+      "passed": true,
+      "evidence": "mentioned"
+    },
+    {
+      "text": "task step uses correct mapping",
+      "passed": true,
+      "evidence": "has app-binary -> orders-api-bin"
+    },
+    {
+      "text": "shared task.yml inputs",
+      "passed": true,
+      "evidence": "true"
+    },
+    {
+      "text": "confirms duplicates can be deleted",
+      "passed": true,
+      "evidence": "noted"
+    },
+    {
+      "text": "mentions output_mapping for symmetry",
+      "passed": false,
+      "evidence": "missing"
+    },
+    {
+      "text": "valid yaml",
+      "passed": true,
+      "evidence": "true"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "total": 6,
+    "ratio": 0.8333333333333334,
+    "pass_rate": 0.8333333333333334
+  }
+}
