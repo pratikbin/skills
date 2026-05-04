@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Personal Claude Code skill packs by pratikbin.",
-    "version": "0.1.0"
+    "version": "0.3.0"
   },
   "plugins": [
     {
       "name": "pratikbin-skills",
       "source": "./",
-      "description": "Curated skill packs for Claude Code. Currently ships Uncloud skills: cluster setup, compose authoring, deploy workflows, and day-2 operations.",
-      "version": "0.1.0",
+      "description": "Curated skill packs for Claude Code. Ships Uncloud (cluster, compose, deploy, ops), Go optimizations (1.19+ perf playbook), and Concourse CI (pipeline, resources, tasks, ops) skill packs.",
+      "version": "0.3.0",
       "author": {
         "name": "pratikbin",
         "email": "pratik@nodeops.xyz"
@@ -23,6 +23,14 @@
       "license": "MIT",
       "keywords": [
         "uncloud",
+        "concourse",
+        "concourse-ci",
+        "ci",
+        "cd",
+        "pipelines",
+        "go",
+        "golang",
+        "performance",
         "devops",
         "docker",
         "compose",

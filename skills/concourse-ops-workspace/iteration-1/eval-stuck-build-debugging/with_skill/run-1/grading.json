@@ -1,0 +1,41 @@
+{
+  "run_id": "eval-2-with_skill",
+  "expectations": [
+    {
+      "text": "uses fly intercept",
+      "passed": true,
+      "evidence": "intercept with -j"
+    },
+    {
+      "text": "specifies the stuck step",
+      "passed": true,
+      "evidence": "apply-tofu targeted"
+    },
+    {
+      "text": "checks workers",
+      "passed": true,
+      "evidence": "fly workers mentioned"
+    },
+    {
+      "text": "mentions abort-build",
+      "passed": true,
+      "evidence": "abort-build mentioned"
+    },
+    {
+      "text": "non-destructive first",
+      "passed": false,
+      "evidence": "intercept@1597 abort@770"
+    },
+    {
+      "text": "mentions prune-worker",
+      "passed": true,
+      "evidence": "prune-worker mentioned"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "total": 6,
+    "ratio": 0.8333333333333334,
+    "pass_rate": 0.8333333333333334
+  }
+}

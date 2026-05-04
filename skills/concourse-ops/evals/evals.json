@@ -1,0 +1,52 @@
+{
+  "skill_name": "concourse-ops",
+  "evals": [
+    {
+      "id": 0,
+      "name": "self-updating-pipeline-bootstrap",
+      "prompt": "we have ~12 concourse pipelines and every pipeline change today goes like:\n1. PR merges to our `ci-pipelines` repo\n2. someone runs `fly -t prod set-pipeline -c pipelines/orders.yml -p orders -l vars/prod.yml`\n3. they (sometimes) remember to also run `fly unpause-pipeline -p orders`\n\nthis is brittle. people forget step 2 or step 3, and we've had two incidents where a pipeline was running stale config for 2 weeks. we want to make pipelines self-update from the repo: when `pipelines/orders.yml` changes on main, the orders pipeline should reconfigure itself, no human running fly. show us the bootstrap pattern + the meta job. assume our repo is `git@github.com:example/ci-pipelines.git` and lives at `pipelines/<name>.yml`. pipeline-level vars are in `vars/prod.yml` in the same repo.",
+      "expected_output": "Use `set_pipeline: self` step. One-time bootstrap via `fly set-pipeline` to install the meta job; after that the meta job updates the pipeline whenever the repo changes. Show: a resource for the ci-pipelines repo, a `reconfigure-self` job that triggers on the repo and `set_pipeline: self`. Mention `var_files:` to pull `vars/prod.yml`. Note: pipelines configured via `set_pipeline` step are auto-archived if disconnected (mention this).",
+      "files": [],
+      "assertions": [
+        {"name": "uses set_pipeline step", "description": "Output uses the `set_pipeline:` step (not just `fly set-pipeline`)"},
+        {"name": "set_pipeline self", "description": "Output uses `set_pipeline: self` (or equivalent that updates the same pipeline)"},
+        {"name": "git resource for ci-pipelines", "description": "Output declares a git resource pointing to `example/ci-pipelines.git`"},
+        {"name": "trigger on repo change", "description": "The reconfigure job has a `get` with `trigger: true` on the ci-pipelines git resource"},
+        {"name": "loads var_files", "description": "Output includes `var_files:` pulling `vars/prod.yml` (or otherwise threads pipeline-level vars in)"},
+        {"name": "explains bootstrap once", "description": "Response explicitly states this is bootstrapped via a one-time `fly set-pipeline` and is self-updating thereafter"},
+        {"name": "valid yaml", "description": "Output YAML is syntactically valid Concourse v8"}
+      ]
+    },
+    {
+      "id": 1,
+      "name": "vault-var-source-team-scoped",
+      "prompt": "i need to set up a team-scoped vault var source for our `payments` team in concourse v8. the team should be able to use `((vault:db.password))` in their pipelines and have that resolve from `secret/data/concourse/payments/db` in our vault server. requirements:\n- vault server is at `https://vault.example.internal`\n- it has a CA cert at `/etc/ssl/certs/internal-ca.crt`\n- we use approle auth; the role_id is in env var `VAULT_ROLE_ID` and secret_id in `VAULT_SECRET_ID`\n- only the `payments` team should be able to read these secrets — secrets should NOT be visible to the `main` team or any other team\n- no static credentials in the pipeline yaml itself\n\nshow the var_sources block that would go in the pipeline.yml. also confirm: where does concourse expect role_id/secret_id to come from when bootstrapping the var_source itself (chicken-and-egg)?",
+      "expected_output": "var_sources block with type=vault, config including url, ca_cert (or path), auth_backend=approle, auth_params with role_id/secret_id (interpolated from cluster-level vars or bootstrap vars passed via fly), path_prefix that scopes to the payments team. Note: bootstrap creds typically come from cluster-level `CONCOURSE_VAULT_*` env vars OR are passed via `fly set-pipeline -v` once at bootstrap. May also recommend setting team-level via `fly set-team --var-source ...` instead of pipeline-level if the team has many pipelines.",
+      "files": [],
+      "assertions": [
+        {"name": "var_sources block", "description": "Output includes a `var_sources:` block with `type: vault`"},
+        {"name": "vault url configured", "description": "Output has `url: https://vault.example.internal` in the vault config"},
+        {"name": "approle auth backend", "description": "Output uses `auth_backend: approle` (or appropriate v8 alias)"},
+        {"name": "team-scoped path_prefix", "description": "Output uses a `path_prefix:` (or equivalent) that scopes to /concourse/payments or similar team-isolated path"},
+        {"name": "bootstrap creds explained", "description": "Response addresses the chicken-and-egg: role_id/secret_id come from cluster env (CONCOURSE_VAULT_*) or `fly set-pipeline -v` at bootstrap, NOT hardcoded in the YAML"},
+        {"name": "ca cert configured", "description": "Output configures CA via `ca_cert:` or trusts the internal CA"},
+        {"name": "valid yaml", "description": "Output YAML is syntactically valid Concourse v8"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "stuck-build-debugging",
+      "prompt": "we have a `deploy-staging` job in our `payments` pipeline that's been stuck for 47 minutes. fly tells us:\n\n```\nfly -t prod builds -j payments/deploy-staging\nname  id    status   start                  end                  duration\n147   2351  started  2026-05-04@03:21:12am  n/a                  n/a\n```\n\nthe step `apply-tofu` (a terraform apply task) appears to be where it's stuck. nothing in the build log for the last 30 min. logs just say `[INFO] applying...`. we need to: (a) figure out what's going on without restarting it (we don't want to lose state if it IS still working), (b) be ready to abort if it really is dead, (c) see if there's a worker-side problem.\n\nwalk me through the fly commands you'd run, in order, and what each one tells us.",
+      "expected_output": "Steps in order: (1) `fly -t prod intercept -j payments/deploy-staging -s apply-tofu -b 147` to drop into the running container and check what process is doing — `ps aux`, look at terraform's actual state, network calls. (2) `fly -t prod workers` to verify the worker that's running this build is still alive (look for `stalled` or missing). (3) If still stuck and need to abort: `fly -t prod abort-build -j payments/deploy-staging -b 147`. (4) If worker is gone: `fly prune-worker -w <name>`. May also mention checking the build's container resources (memory pressure) and the lidar/scheduler logs on the web node.",
+      "files": [],
+      "assertions": [
+        {"name": "uses fly intercept", "description": "Response uses `fly intercept` (or `fly hijack`) with `-j` `-s` `-b` to drop into the stuck step's container"},
+        {"name": "specifies the stuck step", "description": "Response specifies `apply-tofu` as the step to intercept (`-s apply-tofu`)"},
+        {"name": "checks workers", "description": "Response uses `fly workers` to check worker health"},
+        {"name": "mentions abort-build", "description": "Response mentions `fly abort-build` (with build ID or `-j -b`) as the abort path"},
+        {"name": "non-destructive first", "description": "Response orders steps so that intercept (non-destructive diagnosis) comes before abort (destructive)"},
+        {"name": "mentions prune-worker", "description": "Response mentions `fly prune-worker` for the case where a worker has dropped"}
+      ]
+    }
+  ]
+}

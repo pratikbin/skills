@@ -1,0 +1,46 @@
+{
+  "run_id": "eval-0-with_skill",
+  "expectations": [
+    {
+      "text": "uses set_pipeline step",
+      "passed": true,
+      "evidence": "set_pipeline keyword in yaml"
+    },
+    {
+      "text": "set_pipeline self",
+      "passed": true,
+      "evidence": "set_pipeline: self present"
+    },
+    {
+      "text": "git resource for ci-pipelines",
+      "passed": true,
+      "evidence": "ci-pipelines git resource"
+    },
+    {
+      "text": "trigger on repo change",
+      "passed": true,
+      "evidence": "get with trigger:true"
+    },
+    {
+      "text": "loads var_files",
+      "passed": true,
+      "evidence": "var_files: vars/prod.yml"
+    },
+    {
+      "text": "explains bootstrap once",
+      "passed": true,
+      "evidence": "bootstrap-once explained"
+    },
+    {
+      "text": "valid yaml",
+      "passed": true,
+      "evidence": "jobs+resources blocks"
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "total": 7,
+    "ratio": 1,
+    "pass_rate": 1
+  }
+}

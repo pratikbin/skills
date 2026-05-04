@@ -2,7 +2,7 @@
 
 Curated [Agent Skills](https://docs.claude.com/en/docs/claude-code/skills) for [Claude Code](https://claude.com/claude-code) and any other [skills.sh](https://skills.sh)-compatible agent.
 
-Personal skill packs, kept public. Currently ships a full **Uncloud** pack — four focused skills covering cluster setup, compose authoring, deployment workflows, and day-2 operations. More topics (AWS, Rust, etc.) will land in the same flat layout over time.
+Personal skill packs, kept public. Currently ships **Uncloud** (4 skills), **Go optimizations** (perf playbook), and **Concourse CI** (4 skills). All in the same flat layout.
 
 ## Skills
 
@@ -16,6 +16,23 @@ Personal skill packs, kept public. Currently ships a full **Uncloud** pack — f
 | [`uncloud-compose`](skills/uncloud-compose/SKILL.md) | Author `compose.yaml` for Uncloud. Covers `x-ports`, `x-caddy`, `x-machines`, `x-pre_deploy`, replicated vs global mode, health checks, rollbacks, image tag templates. |
 | [`uncloud-deploy`](skills/uncloud-deploy/SKILL.md) | `uc deploy`, `uc run`, `uc build`, `uc image push`. Rolling updates, health gating, private registries, CI/CD recipes, targeting contexts/machines. |
 | [`uncloud-ops`](skills/uncloud-ops/SKILL.md) | Day-2: `uc ps`, `uc logs`, `uc exec`, `uc scale`, Caddy inspection, WireGuard debugging, volume management, 502 triage. |
+
+### Concourse CI
+
+[Concourse CI](https://concourse-ci.org) is a pipeline-as-code CI/CD system. These four skills make Claude Code fluent in writing **fast, idiomatic** Concourse pipelines. Speed-biased throughout (parallelism, caches, trigger tuning, credential caching). Grounded in concourse/docs and concourse/ci real-world pipelines.
+
+| Skill | Purpose |
+|---|---|
+| [`concourse-pipeline`](skills/concourse-pipeline/SKILL.md) | `pipeline.yml` authoring: jobs, plans, all step types and modifiers/hooks, parallelism patterns, `passed:` chains, `serial`/`max_in_flight`, YAML anchors, anti-patterns. |
+| [`concourse-resources`](skills/concourse-resources/SKILL.md) | Resources + resource types: schema, core types (git, registry-image, time, semver, s3, pool), versioning, trigger tuning (`paths`/`check_every`/`webhook_token`), custom types, global resources. |
+| [`concourse-tasks`](skills/concourse-tasks/SKILL.md) | Task config: schema, pure-function model, `image_resource` pinning, `inputs`/`outputs` (incl. `input_mapping`/`output_mapping`), `caches:`, cache-as-task pattern, oci-build-task with buildkit cache, debugging via `fly intercept`/`fly execute`. |
+| [`concourse-ops`](skills/concourse-ops/SKILL.md) | Day-2 + meta: `fly` CLI, `set_pipeline` step + instance pipelines, vars/`var_sources` and credential managers (Vault, AWS, K8s, CredHub, IDToken/OIDC), teams/auth, performance tuning, container placement, OPA, observability, "stuck job/check" debugging. |
+
+### Go optimizations
+
+| Skill | Purpose |
+|---|---|
+| [`go-optimizations-101`](skills/go-optimizations-101/SKILL.md) | Practical Go perf playbook (Go 1.19+): allocations, escape analysis, GC pressure, bounds checks, inlining, slice/string/map/channel/interface overhead. Based on Tapir Liu's *Go Optimizations 101*. |
 
 ## Install
 
