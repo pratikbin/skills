@@ -1,0 +1,50 @@
+{
+  "skill_name": "concourse-resources",
+  "evals": [
+    {
+      "id": 0,
+      "name": "monorepo-trigger-explosion",
+      "prompt": "we just split our company monorepo into 5 different concourse pipelines (one per service). problem: every commit to main now triggers ALL 5 pipelines, even if the commit only touched one service. we have ~20 commits a day, so workers are constantly busy rebuilding stuff that didn't actually change. our git resource for one of the services looks like this:\n\n```yaml\nresources:\n  - name: src\n    type: git\n    source:
+      uri: https://github.com/example/monorepo.git\n      branch: main\n```\n\nthe service we care about for THIS pipeline lives in `services/orders/` and shares utility code in `libs/shared/`. tests inside the service include a `tests/` subdirectory but markdown files (READMEs, ADRs etc) shouldn't trigger anything. how do i scope this so it only fires on relevant changes? please show the corrected resource yaml + brief explanation.",
+      "expected_output": "Resource YAML with `paths: [services/orders/**, libs/shared/**]` and `ignore_paths: [\"**/*.md\"]` (or similar). Brief explanation of `paths` (allow-list) vs `ignore_paths` (deny-list) and the order of evaluation. May also mention `webhook_token` as a follow-up for cutting check load.",
+      "files": [],
+      "assertions": [
+        {"name": "uses paths filter", "description": "Output YAML includes a `paths:` list that scopes to the relevant directories (services/orders, libs/shared)"},
+        {"name": "uses ignore_paths for markdown", "description": "Output YAML includes an `ignore_paths:` entry that excludes `.md` files"},
+        {"name": "preserves git source basics", "description": "Output keeps `uri`, `branch: main`, and the `git` type"},
+        {"name": "explains paths vs ignore_paths", "description": "Response explains that `paths` is an allow-list and `ignore_paths` is applied after, or otherwise clarifies their interaction"},
+        {"name": "valid yaml", "description": "Output YAML is syntactically valid Concourse v8 syntax"}
+      ]
+    },
+    {
+      "id": 1,
+      "name": "registry-image-silent-breakage",
+      "prompt": "yesterday's deploys started failing in prod because our base image got rebuilt with a breaking change upstream. we have:\n\n```yaml\nresources:\n  - name: golang-builder\n    type: registry-image\n    source:\n      repository: golang\n      tag: latest\n      username: ((dockerhub.username))\n      password: ((dockerhub.password))\n```\n\nthe team wants reproducibility but we ALSO want to pick up patch releases automatically (security fixes etc). how do we get the best of both? show what the resource should look like and explain the tradeoff between digest pinning vs semver-constraining. assume our app needs go 1.22.x and we'd like to auto-pick patch versions but NOT auto-jump to 1.23.",
+      "expected_output": "Resource YAML using `semver_constraint: \"~1.22\"` (or `\">=1.22 <1.23\"`) instead of `tag: latest`. May also mention digest pin as an alternative for full reproducibility. Explanation of the tradeoff: digest = full reproducibility but no auto-updates; semver_constraint = auto patches but trust upstream.",
+      "files": [],
+      "assertions": [
+        {"name": "removes tag latest", "description": "Output YAML does NOT use `tag: latest`"},
+        {"name": "uses semver_constraint", "description": "Output YAML includes a `semver_constraint:` that pins to 1.22.x (e.g. \"~1.22\", \">=1.22 <1.23\", or \"1.22.x\")"},
+        {"name": "explains digest alternative", "description": "Response mentions digest pinning as an alternative for full reproducibility"},
+        {"name": "explains tradeoff", "description": "Response explains the tradeoff between digest (no auto-updates) vs semver_constraint (auto patches)"},
+        {"name": "preserves credentials", "description": "Output preserves `username` and `password` fields"},
+        {"name": "valid yaml", "description": "Output YAML is syntactically valid Concourse v8 syntax"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "hammering-github-checks",
+      "prompt": "github support sent us a friendly note that we're hitting their API rate limits with our concourse cluster. we have 18 pipelines that each track a `latest-release` from the same github repo (different consumers of the same library), and they all check at the default ~1m interval. that's 18 pipelines × 60 checks/hour = 1080 check requests/hour for the same data, which is silly. how do we cut that down without losing 'fire when there's a new release' behavior?\n\nrelevant resource snippet (same in all 18 pipelines):\n\n```yaml\n  - name: latest-release\n    type: github-release\n    source:\n      owner: example\n      repository: shared-lib\n      access_token: ((github_token))\n```\n\nwhat options do i have, and which would you actually pick? assume we run our own concourse cluster and have admin access.",
+      "expected_output": "Multiple options ranked: (1) raise `check_every` to 10m or 30m on each resource (cheap, immediate), (2) configure `webhook_token` and point GitHub webhooks at the resource (push instead of poll — best latency), (3) operator-side: enable global resources (`CONCOURSE_ENABLE_GLOBAL_RESOURCES`) so the same source config dedupes to one check across all pipelines. Mention security caveat for global resources (credentials de-facto shared).",
+      "files": [],
+      "assertions": [
+        {"name": "recommends check_every increase", "description": "Response recommends raising `check_every` to a longer interval (e.g. 10m, 30m, 1h)"},
+        {"name": "recommends webhook_token", "description": "Response mentions `webhook_token` and the webhook setup as a way to flip from poll to push"},
+        {"name": "mentions global resources", "description": "Response mentions enabling global resources (CONCOURSE_ENABLE_GLOBAL_RESOURCES or `--enable-global-resources`) as an operator-level fix"},
+        {"name": "explains global resources tradeoff", "description": "Response explains the security/credentials caveat of global resources (shared check load + de-facto credential sharing across teams)"},
+        {"name": "shows updated yaml", "description": "Response includes a corrected resource YAML showing at least one of: `check_every:` set to a longer interval, `webhook_token:` added"},
+        {"name": "valid yaml", "description": "Output YAML is syntactically valid Concourse v8 syntax"}
+      ]
+    }
+  ]
+}
