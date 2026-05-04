@@ -1,0 +1,41 @@
+{
+  "run_id": "eval-0-without_skill",
+  "expectations": [
+    {
+      "text": "wraps gets in in_parallel",
+      "passed": true,
+      "evidence": "in_parallel found=true, gets matched=6"
+    },
+    {
+      "text": "preserves trigger on app-src",
+      "passed": true,
+      "evidence": "trigger: true on app-src"
+    },
+    {
+      "text": "recommends fail_fast",
+      "passed": false,
+      "evidence": "missing"
+    },
+    {
+      "text": "recommends limit",
+      "passed": false,
+      "evidence": "missing"
+    },
+    {
+      "text": "task and put remain sequential after gets",
+      "passed": true,
+      "evidence": "task+put present"
+    },
+    {
+      "text": "explains why it's safe",
+      "passed": true,
+      "evidence": "keywords found"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "total": 6,
+    "ratio": 0.6666666666666666,
+    "pass_rate": 0.6666666666666666
+  }
+}

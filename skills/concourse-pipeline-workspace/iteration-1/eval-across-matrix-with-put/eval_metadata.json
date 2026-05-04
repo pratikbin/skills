@@ -1,0 +1,14 @@
+{
+  "eval_id": 1,
+  "eval_name": "across-matrix-with-put",
+  "prompt": "trying to build a matrix that runs our test task across 3 go versions (1.22, 1.23, 1.24) and 2 OSes (linux, darwin), then publishes the resulting test reports as an s3 artifact. concourse keeps barfing on this and i think `across` is the issue but i can't tell what's wrong. current attempt:\n\n```yaml\njobs:\n  - name: matrix-test\n    plan:\n      - across:\n          - var: go_v\n            values: [\"1.22\", \"1.23\", \"1.24\"]\n          - var: os\n            values: [\"linux\", \"darwin\"]\n        do:\n          - get: source\n            trigger: true\n          - task: test\n            file: source/ci/test.yml\n            vars:\n              go: ((.:go_v))\n              os: ((.:os))\n          - put: test-reports\n            params:\n              file: source/reports/((.:os))-((.:go_v)).tgz\n```\n\nplease show me a working version. i want all 6 combos to run in parallel if there are workers available, and i want the s3 publish to actually work.",
+  "assertions": [
+    {"name": "states across does not work with get/put", "description": "Response explicitly states (or quotes) that the `across` step does NOT work with `get` or `put` steps"},
+    {"name": "moves get out of across", "description": "Final YAML places `get: source` BEFORE / OUTSIDE the `across` block, not inside"},
+    {"name": "moves put out of across", "description": "Final YAML places `put: test-reports` OUTSIDE the `across` block — either as a single put after across, or replaces across entirely with `in_parallel`"},
+    {"name": "mentions outputs do not escape across", "description": "Response notes that outputs from steps inside `across` are not available to steps outside (relevant to why per-combo puts don't work)"},
+    {"name": "max_in_flight all", "description": "Final YAML includes `max_in_flight: all` (or an explicit integer) to run combos in parallel"},
+    {"name": "preserves trigger semantics", "description": "Final pipeline still triggers on new versions of `source` (trigger: true preserved)"},
+    {"name": "matrix coverage", "description": "All 6 combinations (3 go × 2 os) are still produced by the corrected pipeline"}
+  ]
+}

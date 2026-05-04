@@ -1,0 +1,13 @@
+{
+  "eval_id": 0,
+  "eval_name": "fan-out-sequential-gets",
+  "prompt": "this concourse job is taking ~9 minutes and most of that is the first stage. heres the relevant slice from our pipeline.yml:\n\n```yaml\njobs:\n  - name: build-and-publish\n    plan:\n      - get: app-src\n        trigger: true\n      - get: ci\n      - get: golang-builder\n      - get: deploy-keys\n      - get: chart-repo\n      - get: version\n      - task: unit\n        file: ci/tasks/unit/task.yml\n      - task: build\n        file: ci/tasks/build/task.yml\n      - put: app-image\n        params: { image: build/image.tar }\n```\n\nbasic gut says theres no reason all those gets need to run sequentially but i don't want to break the trigger behavior or end up paying for 30 cold workers. how do we speed this up? assume the worker pool is healthy and we have 4-6 concourse workers normally available.",
+  "assertions": [
+    {"name": "wraps gets in in_parallel", "description": "Output YAML wraps the 6 gets in an `in_parallel:` block"},
+    {"name": "preserves trigger on app-src", "description": "`trigger: true` is preserved on the `app-src` get"},
+    {"name": "recommends fail_fast", "description": "Output includes `fail_fast: true` on the in_parallel block, with a brief reason"},
+    {"name": "recommends limit", "description": "Output includes a `limit:` (4-6 is reasonable given 4-6 workers) so worker pool isn't blown out"},
+    {"name": "task and put remain sequential after gets", "description": "The `task: unit`, `task: build`, and `put: app-image` steps stay sequential after the gets — they aren't moved into the in_parallel block"},
+    {"name": "explains why it's safe", "description": "Response briefly explains why parallelizing gets is safe (gets are independent, no shared state, plan still waits for slowest get before running tasks)"}
+  ]
+}

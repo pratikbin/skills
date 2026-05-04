@@ -1,0 +1,41 @@
+{
+  "run_id": "eval-2-with_skill",
+  "expectations": [
+    {
+      "text": "diagnoses two triggers as cause",
+      "passed": true,
+      "evidence": "explained"
+    },
+    {
+      "text": "fix uses single trigger",
+      "passed": true,
+      "evidence": "count=1"
+    },
+    {
+      "text": "fix mirrors passed lists",
+      "passed": true,
+      "evidence": "[\"unit, integration\",\"unit, integration\"]"
+    },
+    {
+      "text": "calls out version skew risk",
+      "passed": true,
+      "evidence": "noted"
+    },
+    {
+      "text": "preserves auto-deploy",
+      "passed": true,
+      "evidence": "noted"
+    },
+    {
+      "text": "valid yaml",
+      "passed": true,
+      "evidence": "job=true plan=true gets=true"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "total": 6,
+    "ratio": 1,
+    "pass_rate": 1
+  }
+}
