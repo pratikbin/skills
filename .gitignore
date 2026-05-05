@@ -30,6 +30,10 @@ tmp/
 .pi
 .claude
 skills/go-optimizations-101-workspace/
+skills/concourse-pipeline-workspace/
+skills/concourse-resources-workspace/
+skills/concourse-tasks-workspace/
+skills/concourse-ops-workspace/
 skills-lock.json
 # top-level standalone evals dirs (not skill evals/)
 /evals
